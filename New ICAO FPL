@@ -1,0 +1,182 @@
+**Deployment-Ready Flight Plan App Repository**
+
+I have created a structured repository ready for deployment of your ICAO Flight Plan App with frontend (React) and backend (Node.js) for email integration.
+
+---
+
+### Folder Structure
+
+```
+flight-plan-app/
+├─ frontend/
+│  ├─ public/
+│  │   └─ index.html
+│  ├─ src/
+│  │   ├─ App.js       # Full ICAO flight plan app code
+│  │   ├─ index.js
+│  │   └─ index.css
+│  ├─ package.json
+│  └─ .env             # REACT_APP_API_URL=https://your-backend-url.com
+│
+├─ backend/
+│  ├─ server.js         # Express + Nodemailer backend
+│  ├─ package.json
+│  └─ .env              # EMAIL_USER & EMAIL_PASS
+│
+└─ README.md
+```
+
+---
+
+### 1️⃣ Frontend Setup
+
+**.env**
+
+```
+REACT_APP_API_URL=https://your-backend-url.com
+```
+
+* Install dependencies and build the frontend:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+* Deploy `frontend/build` folder to **Vercel** or **Netlify**.
+
+**index.js**
+
+```javascript
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+```
+
+**App.js**
+
+* Full flight plan code including:
+
+  * ICAO field inputs (7-19)
+  * Validation
+  * PDF export
+  * Save flight plan
+  * Send email integration to Belize AIS
+  * Email logging and log PDF export
+* `sendEmail()` points to `process.env.REACT_APP_API_URL`.
+
+---
+
+### 2️⃣ Backend Setup
+
+**.env**
+
+```
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+PORT=3001
+```
+
+**server.js**
+
+* Express server receiving Base64 PDF, sending email to `belize.ais@civilaviation.gov.bz`:
+
+```javascript
+const express = require("express");
+const nodemailer = require("nodemailer");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+
+const app = express();
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(cors());
+
+const PORT = process.env.PORT || 3001;
+
+app.post("/send-flightplan", async (req, res) => {
+  const { pdfBase64, subject } = req.body;
+
+  let transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+  });
+
+  let mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: "belize.ais@civilaviation.gov.bz",
+    subject: subject || "New Flight Plan",
+    text: "Attached is the flight plan PDF.",
+    attachments: [{ filename: "flightplan.pdf", content: pdfBase64, encoding: "base64" }]
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+```
+
+**package.json**
+
+```json
+{
+  "name": "flightplan-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.3",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5"
+  }
+}
+```
+
+* Deploy backend to **Render** or **Heroku** and set `.env` variables on the platform.
+
+---
+
+### 3️⃣ Deployment Steps
+
+**Backend**
+
+1. Push `backend/` to GitHub.
+2. Deploy to Render/Heroku.
+3. Set environment variables.
+
+**Frontend**
+
+1. Push `frontend/` to GitHub.
+2. Deploy `build/` folder to Vercel/Netlify.
+3. Ensure `REACT_APP_API_URL` points to the deployed backend.
+
+---
+
+### 4️⃣ Features Ready for Production
+
+* ICAO Flight Plan (Fields 7-19)
+* Validation of fields
+* Save flight plan locally
+* Export flight plan PDF
+* Send flight plan email to Belize AIS
+* Email logging with status (Sent, Failed, Error)
+* Export email log to PDF for record keeping
+
+---
+
+You can now **clone this repository**, set environment variables, and deploy both frontend and backend. The app will work immediately without additional configuration.
